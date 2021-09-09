@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, {ReactNode, useState, useReducer, useCallback} from 'react';
+import React, {ReactNode, useState, useReducer, useCallback, SyntheticEvent} from 'react';
 import './App.css';
 
 const API_ENDPOINT = 'https://hn.algolia.com/api/v1/search?query='
@@ -124,6 +124,19 @@ const App = () => {
     
   )
 
+  // React.useEffect(() => {
+  //   localStorage.setItem('search', searchTerm)
+  // }, [searchTerm])
+
+  const handleSearchInput = (event:React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value)
+  }
+
+  const handleSearchSubmit = (event:SyntheticEvent) => {
+    setUrl(`${API_ENDPOINT}${searchTerm}`)
+    event.preventDefault()
+  }
+
   const handleRemoveStory = (item:Story) => {
     // const newStories = stories.filter((story:any) => 
     //     item.objectID !== story.objectID
@@ -135,36 +148,18 @@ const App = () => {
     })
   }
 
-  // React.useEffect(() => {
-  //   localStorage.setItem('search', searchTerm)
-  // }, [searchTerm])
-
-  const handleSearchInput = (event:React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value)
-  }
-
-  const handleSearchSubmit = () => {
-    setUrl(`${API_ENDPOINT}${searchTerm}`)
-  }
-
   // const searchedStories = stories.data.filter((story:any) =>
   //     story.title.toLowerCase().includes(searchTerm.toLowerCase()))
 
   return (
-    <div className="App">
-      <h1>My Hacker Stories</h1>
-      
-      <InputWithLabel id="search" type="text" value={searchTerm} isFocused onInputChange={handleSearchInput}>
-        <strong>Search:</strong>
-      </InputWithLabel>
+    <div className="container">
+      <h1 className="headline-primary">My Hacker Stories</h1>
 
-      <button
-        type="button"
-        disabled={!searchTerm}
-        onClick={handleSearchSubmit}
-        >
-        Submit
-      </button>
+      <SearchForm 
+        searchTerm={searchTerm}
+        onSearchInput={handleSearchInput}
+        onSearchSubmit={handleSearchSubmit}
+        />
 
       {stories.isError && <p>Something went wrong...</p>}
 
@@ -172,8 +167,6 @@ const App = () => {
       {stories.isLoading 
         ? (<p>Loading...</p>)
         : (<List list={stories.data} onRemoveItem={handleRemoveStory} />)}
-        {/* : (<p>lalala</p>)} */}
-      <hr/>
       
     </div>
   );
@@ -222,13 +215,19 @@ const Item = ({item, onRemoveItem}:ItemProps) => {
   //   onRemoveItem(item)
 
   return (
-    <div>
-      <span><a href={item.url}>{item.title}</a></span>
-      <span>{item.author}</span>
-      <span>{item.num_comments}</span>
-      <span>{item.points}</span>
-      <span>
-        <button type="button" onClick={() => onRemoveItem(item)}>Dismiss</button>
+    <div className="item">
+      <span style={{width:'40%'}}><a href={item.url}>{item.title}</a></span>
+      <span style={{width:'30%'}}>{item.author}</span>
+      <span style={{width:'10%'}}>{item.num_comments}</span>
+      <span style={{width:'10%'}}>{item.points}</span>
+      <span style={{width:'10%'}}>
+        <button 
+          type="button" 
+          onClick={() => onRemoveItem(item)}
+          className="button button_small"
+          >
+            Dismiss
+        </button>
       </span>
     </div>
   )
@@ -255,16 +254,44 @@ const InputWithLabel = ({id, type, value, isFocused, onInputChange, children}:In
 
   return (
     <>
-      <label htmlFor={id}>{children}</label>
+      <label htmlFor={id} className="label">{children}</label>
       &nbsp;
       <input 
         ref={inputRef as any}
         id={id} 
         type={type} 
-        value={value} /* autofocus={isFocused} */ 
+        value={value} 
+        className="input"
         onChange={onInputChange}
       />
     </>
+  )
+}
+
+
+// -----------------------------------
+type SearchFormProps = {
+  searchTerm: string
+  onSearchInput: (event:React.ChangeEvent<HTMLInputElement>) => void
+  onSearchSubmit: (event:SyntheticEvent) => void
+}
+
+const SearchForm = ({searchTerm, onSearchSubmit, onSearchInput}:SearchFormProps) => {
+  return (
+    <form onSubmit={onSearchSubmit} className="search-form">
+        <InputWithLabel id="search" type="text" value={searchTerm} isFocused onInputChange={onSearchInput}>
+          <strong>Search:</strong>
+        </InputWithLabel>
+
+        <button
+          type="submit"
+          disabled={!searchTerm}
+          className="button button_large"
+          // onClick={handleSearchSubmit}
+          >
+          Submit
+        </button>
+      </form>
   )
 }
 
