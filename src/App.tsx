@@ -1,33 +1,35 @@
 import { Console } from 'console';
-import React, {ReactNode, useState, useReducer} from 'react';
+import React, {ReactNode, useState, useReducer, useCallback} from 'react';
 import './App.css';
 
-const initialStories: Story[] = [
-  {
-    title: 'React',
-    url: 'https://reactjs.org/',
-    author: 'Jordan Walke',
-    num_comments: 3,
-    points: 4,
-    objectID: 0,
-  }, {
-      title: 'Redux',
-      url: 'https://redux.js.org/',
-      author: 'Dan Abramov, Andrew Clark',
-      num_comments: 2,
-      points: 5,
-      objectID: 1,
-  }, 
-];
+const API_ENDPOINT = 'https://hn.algolia.com/api/v1/search?query='
 
-const getAsyncStories = () =>
-    new Promise<PromiseData>((resolve, reject) =>
-      setTimeout(
-        () => resolve({data: {stories:initialStories}}),
-        // reject,
-        2000
-      )
-    )
+// const initialStories: Story[] = [
+//   {
+//     title: 'React',
+//     url: 'https://reactjs.org/',
+//     author: 'Jordan Walke',
+//     num_comments: 3,
+//     points: 4,
+//     objectID: 0,
+//   }, {
+//       title: 'Redux',
+//       url: 'https://redux.js.org/',
+//       author: 'Dan Abramov, Andrew Clark',
+//       num_comments: 2,
+//       points: 5,
+//       objectID: 1,
+//   }, 
+// ];
+
+// const getAsyncStories = () =>
+//     new Promise<PromiseData>((resolve, reject) =>
+//       setTimeout(
+//         () => resolve({data: {stories:initialStories}}),
+//         // reject,
+//         2000
+//       )
+//     )
 
 // type Action = {type: 'SET_STORIES'}
 
@@ -76,6 +78,7 @@ const storiesReducer = (state:any, action:any) => {
 
 const App = () => {
   const [searchTerm, setSearchTerm] = useSemiPersistentState('search', 'React')
+  const [url, setUrl] = useState(`${API_ENDPOINT}${searchTerm}`)
 
   // const [stories, setStories] = useState([] as Story[])
   const [stories, dispatchStories] = useReducer(
@@ -86,16 +89,19 @@ const App = () => {
   // const [isLoading, setIsLoading] = useState(false)
   // const [isError, setIsError] = useState(false)
 
-  React.useEffect(() => {
-    // setIsLoading(true)
+  const handleFetchStories = useCallback(() => {
+    if (!searchTerm) return
+
     dispatchStories({type: 'STORIES_FETCH_INIT'})
 
-    getAsyncStories()
+    // getAsyncStories()
+    fetch(url)
+      .then(response => response.json())
       .then((result) => {
         // setStories(result.data.stories)
         dispatchStories({
           type: 'STORIES_FETCH_SUCCESS',
-          payload: result.data.stories
+          payload: result.hits
         })
         // setIsLoading(false)
       })
@@ -103,7 +109,14 @@ const App = () => {
         // setIsError(true)
         dispatchStories({type: 'STORIES_FETCH_FAILURE'})
       )
-  }, [])
+  }, [url])
+
+  React.useEffect(() => {
+    handleFetchStories()
+    // setIsLoading(true)
+    }, [handleFetchStories]
+    
+  )
 
   const handleRemoveStory = (item:Story) => {
     // const newStories = stories.filter((story:any) => 
@@ -120,26 +133,38 @@ const App = () => {
   //   localStorage.setItem('search', searchTerm)
   // }, [searchTerm])
 
-  const handleSearch = (event:React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchInput = (event:React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value)
   }
 
-  const searchedStories = stories.data.filter((story:any) =>
-      story.title.toLowerCase().includes(searchTerm.toLowerCase()))
+  const handleSearchSubmit = () => {
+    setUrl(`${API_ENDPOINT}${searchTerm}`)
+  }
+
+  // const searchedStories = stories.data.filter((story:any) =>
+  //     story.title.toLowerCase().includes(searchTerm.toLowerCase()))
 
   return (
     <div className="App">
       <h1>My Hacker Stories</h1>
-      <InputWithLabel id="search" type="text" value={searchTerm} isFocused onInputChange={handleSearch}>
+      <InputWithLabel id="search" type="text" value={searchTerm} isFocused onInputChange={handleSearchInput}>
         <strong>Search:</strong>
       </InputWithLabel>
+
+      <button
+        type="button"
+        disabled={!searchTerm}
+        onClick={handleSearchSubmit}
+        >
+        Submit
+      </button>
 
       {stories.isError && <p>Something went wrong...</p>}
 
       {console.log("filteredStories", stories)}
       {stories.isLoading 
         ? (<p>Loading...</p>)
-        : (<List list={searchedStories} onRemoveItem={handleRemoveStory} />)}
+        : (<List list={stories.data} onRemoveItem={handleRemoveStory} />)}
         {/* : (<p>lalala</p>)} */}
       <hr/>
       
