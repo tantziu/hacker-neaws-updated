@@ -1,4 +1,4 @@
-import { Console } from 'console';
+import axios from 'axios';
 import React, {ReactNode, useState, useReducer, useCallback} from 'react';
 import './App.css';
 
@@ -89,26 +89,32 @@ const App = () => {
   // const [isLoading, setIsLoading] = useState(false)
   // const [isError, setIsError] = useState(false)
 
-  const handleFetchStories = useCallback(() => {
+  const handleFetchStories = useCallback(async () => {
     if (!searchTerm) return
 
     dispatchStories({type: 'STORIES_FETCH_INIT'})
-
-    // getAsyncStories()
-    fetch(url)
-      .then(response => response.json())
-      .then((result) => {
-        // setStories(result.data.stories)
-        dispatchStories({
-          type: 'STORIES_FETCH_SUCCESS',
-          payload: result.hits
-        })
-        // setIsLoading(false)
+    try {
+      const result = await axios.get(url)
+      dispatchStories({
+        type: 'STORIES_FETCH_SUCCESS',
+        payload: result.data.hits
       })
-      .catch(() => 
-        // setIsError(true)
-        dispatchStories({type: 'STORIES_FETCH_FAILURE'})
-      )
+    } catch {
+      dispatchStories({type: 'STORIES_FETCH_FAILURE'})
+    }
+    
+    // getAsyncStories()
+    // fetch(url)
+      // .then(response => response.json())
+      // .then((result) => {
+        // setStories(result.data.stories)
+        
+        // setIsLoading(false)
+      // })
+      // .catch(() => 
+      //   // setIsError(true)
+      //   dispatchStories({type: 'STORIES_FETCH_FAILURE'})
+      // )
   }, [url])
 
   React.useEffect(() => {
@@ -147,6 +153,7 @@ const App = () => {
   return (
     <div className="App">
       <h1>My Hacker Stories</h1>
+      
       <InputWithLabel id="search" type="text" value={searchTerm} isFocused onInputChange={handleSearchInput}>
         <strong>Search:</strong>
       </InputWithLabel>
